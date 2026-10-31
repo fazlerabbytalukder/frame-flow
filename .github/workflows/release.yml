@@ -1,16 +1,29 @@
-# Publishes a Frame Studio release when a version tag is pushed:
+# Builds the Windows installer and attaches it to a GitHub Release. Two ways
+# to start it:
 #
-#   npm version patch        # 0.1.0 -> 0.1.1, commits and tags v0.1.1
-#   git push --follow-tags
+#   1. On GitHub: Releases → "Draft a new release" → choose a NEW tag such as
+#      v0.1.1 → Publish release.
+#   2. From the command line:
+#        npm version patch        # 0.1.0 -> 0.1.1, commits and tags v0.1.1
+#        git push --follow-tags
 #
-# The installer, its blockmap and latest.yml land on a GitHub Release; the
-# installed apps find latest.yml there and offer the update (see
-# electron/services/updater.js). Ordinary pushes without a tag release nothing.
+# The app version comes from the tag (v0.1.1 → 0.1.1). The release gets
+# Frame-Studio-Setup-<version>.exe, its .blockmap and latest.yml; installed
+# apps read latest.yml and offer the update (electron/services/updater.js).
+# Pushes without a tag release nothing.
 name: Release
 
 on:
   push:
     tags: ['v*']
+  release:
+    types: [published]
+
+# Publishing a release on GitHub with a new tag fires both events; they share
+# this group and the second run finds the installer already there and stops.
+concurrency:
+  group: release-${{ github.event.release.tag_name || github.ref_name }}
+  cancel-in-progress: false
 
 permissions:
   contents: write # create the release and upload the installer
@@ -18,35 +31,63 @@ permissions:
 jobs:
   release:
     runs-on: windows-latest
+    env:
+      TAG: ${{ github.event.release.tag_name || github.ref_name }}
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    defaults:
+      run:
+        shell: bash
     steps:
+      - name: Read the version from the tag
+        id: version
+        run: |
+          if ! [[ "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error::Release tags look like v1.2.3 (got $TAG)"
+            exit 1
+          fi
+          echo "version=${TAG#v}" >> "$GITHUB_OUTPUT"
+          if gh release view "$TAG" -R "$GITHUB_REPOSITORY" --json assets -q '.assets[].name' 2>/dev/null | grep -qx latest.yml; then
+            echo "Release $TAG already has its installer; nothing to do."
+            echo "done=true" >> "$GITHUB_OUTPUT"
+          fi
+
       - uses: actions/checkout@v4
+        if: steps.version.outputs.done != 'true'
+        with:
+          ref: ${{ env.TAG }}
 
       - uses: actions/setup-node@v4
+        if: steps.version.outputs.done != 'true'
         with:
           node-version: 22
           cache: npm
 
-      - name: Tag must match package.json version
-        shell: bash
+      - name: Install
+        if: steps.version.outputs.done != 'true'
         run: |
-          v=$(node -p "require('./package.json').version")
-          if [ "v$v" != "$GITHUB_REF_NAME" ]; then
-            echo "::error::Tag $GITHUB_REF_NAME does not match package.json version $v (use npm version)"
-            exit 1
-          fi
-
-      - run: npm ci
+          npm ci
+          npm version "${{ steps.version.outputs.version }}" --no-git-tag-version --allow-same-version
 
       - name: Unit tests
+        if: steps.version.outputs.done != 'true'
         run: npm run test:unit
 
       - name: Build the installer
+        if: steps.version.outputs.done != 'true'
         run: npm run build && npx electron-builder --win --publish never
 
       - name: Smoke-test the packaged app
+        if: steps.version.outputs.done != 'true'
         run: npm run test:packaged
 
-      - name: Publish to GitHub Releases
-        run: npx electron-builder --win --prepackaged release/win-unpacked --publish always
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Publish to the GitHub Release
+        if: steps.version.outputs.done != 'true'
+        run: |
+          v="${{ steps.version.outputs.version }}"
+          if ! gh release view "$TAG" -R "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release create "$TAG" -R "$GITHUB_REPOSITORY" --title "Frame Studio $v" --generate-notes
+          fi
+          gh release upload "$TAG" -R "$GITHUB_REPOSITORY" --clobber \
+            "release/Frame-Studio-Setup-$v.exe" \
+            "release/Frame-Studio-Setup-$v.exe.blockmap" \
+            release/latest.yml

@@ -199,8 +199,13 @@ Documents/Frame Studio/projects/<id>/
 ## Releasing
 
 Releases are built and published by GitHub Actions
-(`.github/workflows/release.yml`) when a version tag is pushed. Ordinary
-pushes release nothing.
+(`.github/workflows/release.yml`). Ordinary pushes release nothing. Start a
+release either way:
+
+- **On GitHub:** Releases → *Draft a new release* → choose a **new** tag like
+  `v0.1.1` → write notes → *Publish release*. The installer is attached about
+  10 minutes later. (A release whose tag already has an installer is left as is.)
+- **From the command line:**
 
 ```powershell
 npm test                  # everything must pass first
@@ -208,7 +213,7 @@ npm version patch         # 0.1.0 -> 0.1.1 (minor / major for bigger steps); com
 git push --follow-tags    # pushes the code and the tag: the release workflow starts
 ```
 
-The workflow checks that the tag matches `package.json`, runs the unit tests,
+The workflow takes the version from the tag (`v0.1.1` → 0.1.1), runs the unit tests,
 builds the installer, runs `npm run test:packaged` against it, and publishes
 `Frame-Studio-Setup-<version>.exe`, its `.blockmap` and `latest.yml` to
 https://github.com/fazlerabbytalukder/frame-flow/releases. Send people the
