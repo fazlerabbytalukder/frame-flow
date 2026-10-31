@@ -1,0 +1,12 @@
+# Dependencies and build output (rebuilt by npm install / npm run build / npm run dist)
+node_modules/
+dist/
+release/
+
+# Logs and local tooling
+*.log
+npm-debug.log*
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

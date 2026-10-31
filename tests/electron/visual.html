@@ -1,0 +1,38 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Frame Studio visual tests</title>
+  </head>
+  <body>
+    <script type="module">
+      // Loads the real composition engine into a Chromium renderer so the
+      // tests draw with the same canvas implementation the app uses.
+      import * as engine from '../../src/engine/composition-engine.js';
+      import * as zoom from '../../src/engine/zoom-engine.js';
+      import * as frame from '../../src/engine/frame-state.js';
+      import { drawSafeZones } from '../../src/features/editor/safe-zones.js';
+
+      // A synthetic "recording": four solid quadrants make framing errors
+      // show up as wrong colors at known pixels.
+      function makeSource(w = 1600, h = 900) {
+        const c = document.createElement('canvas');
+        c.width = w;
+        c.height = h;
+        const x = c.getContext('2d');
+        x.fillStyle = '#ff0000'; x.fillRect(0, 0, w / 2, h / 2);
+        x.fillStyle = '#00ff00'; x.fillRect(w / 2, 0, w / 2, h / 2);
+        x.fillStyle = '#0000ff'; x.fillRect(0, h / 2, w / 2, h / 2);
+        x.fillStyle = '#ffff00'; x.fillRect(w / 2, h / 2, w / 2, h / 2);
+        return c;
+      }
+
+      window.engine = engine;
+      window.zoom = zoom;
+      window.frame = frame;
+      window.drawSafeZones = drawSafeZones;
+      window.makeSource = makeSource;
+      window.ready = true;
+    </script>
+  </body>
+</html>

@@ -1,0 +1,183 @@
+@import "tailwindcss";
+
+/* Frame Studio palette: neutral graphite grays with a blue accent, in the
+   spirit of pro video tools. The app is written against Tailwind's slate /
+   indigo / red names; these overrides re-tone every view from one place. */
+@theme {
+  --color-slate-50: #f4f4f4;
+  --color-slate-100: #e6e6e6;
+  --color-slate-200: #d0d0d0;
+  --color-slate-300: #b6b6b6;
+  --color-slate-400: #949494;
+  --color-slate-500: #737373;
+  --color-slate-600: #595959;
+  --color-slate-700: #444444;
+  --color-slate-800: #353535;
+  --color-slate-900: #2a2a2a;
+  --color-slate-950: #1f1f1f;
+
+  --color-indigo-50: #e9f2fe;
+  --color-indigo-100: #d0e3fc;
+  --color-indigo-200: #a6cbf8;
+  --color-indigo-300: #7bb2f4;
+  --color-indigo-400: #4b9cf5;
+  --color-indigo-500: #2680eb;
+  --color-indigo-600: #1473e6;
+  --color-indigo-700: #0d66d0;
+  --color-indigo-800: #095aba;
+  --color-indigo-900: #0a3f82;
+  --color-indigo-950: #0b2a52;
+
+  --color-red-400: #ec5b62;
+  --color-red-500: #e34850;
+  --color-red-600: #d7373f;
+}
+
+:root {
+  color-scheme: dark;
+}
+
+body {
+  @apply bg-[#1b1b1b] text-slate-200 antialiased select-none;
+  font-family: "Segoe UI Variable", "Segoe UI", system-ui, sans-serif;
+  overflow: hidden;
+}
+
+html.hud,
+html.hud body {
+  background: transparent;
+}
+
+input[type="range"] {
+  @apply accent-indigo-500;
+}
+
+/* Start-recording buttons (recorder bar and library): a red gradient with a
+   soft glow, so recording reads the same everywhere. */
+.ff-record-btn {
+  @apply flex items-center justify-center gap-2 font-semibold text-white transition-all;
+  background: linear-gradient(180deg, var(--color-red-500) 0%, var(--color-red-600) 100%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.22), 0 2px 10px rgba(215, 55, 63, 0.35);
+}
+.ff-record-btn:hover:not(:disabled) {
+  background: linear-gradient(180deg, var(--color-red-400) 0%, var(--color-red-500) 100%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.25), 0 3px 14px rgba(215, 55, 63, 0.5);
+}
+.ff-record-btn:active:not(:disabled) {
+  transform: translateY(1px);
+}
+.ff-record-btn:disabled {
+  @apply bg-none bg-slate-700 text-slate-500 shadow-none;
+}
+
+/* Editor sliders: thin track with a blue fill up to the value (--fill) and a
+   ringed thumb, in the style of pro creative tools. */
+.ff-range {
+  appearance: none;
+  height: 16px;
+  background: transparent;
+  cursor: pointer;
+}
+
+.ff-range::-webkit-slider-runnable-track {
+  height: 2px;
+  border-radius: 1px;
+  background: linear-gradient(
+    to right,
+    var(--color-indigo-500) 0 var(--fill, 0%),
+    var(--color-slate-600) var(--fill, 0%) 100%
+  );
+}
+
+.ff-range::-webkit-slider-thumb {
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  margin-top: -6px;
+  border-radius: 50%;
+  background: var(--color-slate-900);
+  border: 2px solid var(--color-slate-200);
+  transition: border-color 120ms, transform 120ms;
+}
+
+.ff-range:hover::-webkit-slider-thumb {
+  border-color: #fff;
+}
+
+.ff-range:active::-webkit-slider-thumb {
+  border-color: var(--color-indigo-400);
+  transform: scale(1.1);
+}
+
+.ff-range:focus-visible {
+  outline: none;
+}
+
+.ff-range:focus-visible::-webkit-slider-thumb {
+  box-shadow: 0 0 0 2px var(--color-indigo-500);
+}
+
+/* Thin scrollbars for docked panels and the timeline. */
+.ff-scroll::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+.ff-scroll::-webkit-scrollbar-thumb {
+  background: var(--color-slate-700);
+  border: 3px solid transparent;
+  background-clip: padding-box;
+  border-radius: 8px;
+}
+
+.ff-scroll::-webkit-scrollbar-thumb:hover {
+  background-color: var(--color-slate-600);
+}
+
+.ff-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* Recorder bar (#hud): window dragging and popover motion. */
+.drag {
+  -webkit-app-region: drag;
+}
+
+.no-drag {
+  -webkit-app-region: no-drag;
+}
+
+@keyframes hud-rise {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+
+@keyframes hud-pop {
+  from {
+    opacity: 0;
+    transform: scale(1.6);
+  }
+}
+
+.hud-rise {
+  animation: hud-rise 140ms ease-out;
+}
+
+.hud-pop {
+  animation: hud-pop 260ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+@keyframes hud-indeterminate {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(300%);
+  }
+}
+
+.hud-indeterminate {
+  animation: hud-indeterminate 1.1s ease-in-out infinite;
+}
