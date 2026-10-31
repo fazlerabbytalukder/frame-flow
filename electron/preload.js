@@ -92,6 +92,18 @@ contextBridge.exposeInMainWorld('frameflow', {
   clipboard: {
     writeImage: (dataUrl) => ipcRenderer.invoke('clipboard:write-image', dataUrl),
   },
+  update: {
+    // state: { status, version, percent, notes, error }
+    state: () => ipcRenderer.invoke('update:state'),
+    check: () => ipcRenderer.invoke('update:check'),
+    download: () => ipcRenderer.invoke('update:download'),
+    install: () => ipcRenderer.invoke('update:install'),
+    onState: (callback) => {
+      const listener = (_event, state) => callback(state);
+      ipcRenderer.on('update:state', listener);
+      return () => ipcRenderer.removeListener('update:state', listener);
+    },
+  },
   export: {
     start: (opts) => ipcRenderer.invoke('export:start', opts),
     frame: (buffer) => ipcRenderer.invoke('export:frame', buffer),

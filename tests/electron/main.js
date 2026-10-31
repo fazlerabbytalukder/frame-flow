@@ -22,6 +22,9 @@ const { registerExportIpc } = require('../../electron/ipc/export');
 const { registerWindowsIpc } = require('../../electron/ipc/windows');
 const { registerTranscriptIpc } = require('../../electron/ipc/transcript');
 const { registerToolsIpc } = require('../../electron/ipc/tools');
+const { registerUpdateIpc } = require('../../electron/ipc/update');
+const { createUpdater } = require('../../electron/services/updater');
+const { isRecording } = require('../../electron/ipc/recording');
 
 const keep = process.argv.includes('--keep');
 const only = (process.argv.find((a) => a.startsWith('--only=')) || '').slice(7).toLowerCase();
@@ -35,6 +38,8 @@ app.whenReady().then(async () => {
     registerExportIpc(() => null);
     registerTranscriptIpc();
     registerToolsIpc();
+    // As in a dev build: updates disabled, so nothing reaches GitHub.
+    registerUpdateIpc(createUpdater({ updater: null, enabled: false, isBusy: isRecording, broadcast: () => {} }));
     // Window calls are recorded instead of touching real windows.
     const shellCalls = [];
     registerWindowsIpc(
@@ -58,6 +63,7 @@ app.whenReady().then(async () => {
       'segmenter.test.js',
       'studio-features.test.js',
       'windows.test.js',
+      'updater.test.js',
       'security.test.js',
     ]) {
       require(`./${file}`)(ctx);

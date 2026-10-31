@@ -1,0 +1,52 @@
+# Publishes a Frame Studio release when a version tag is pushed:
+#
+#   npm version patch        # 0.1.0 -> 0.1.1, commits and tags v0.1.1
+#   git push --follow-tags
+#
+# The installer, its blockmap and latest.yml land on a GitHub Release; the
+# installed apps find latest.yml there and offer the update (see
+# electron/services/updater.js). Ordinary pushes without a tag release nothing.
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write # create the release and upload the installer
+
+jobs:
+  release:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Tag must match package.json version
+        shell: bash
+        run: |
+          v=$(node -p "require('./package.json').version")
+          if [ "v$v" != "$GITHUB_REF_NAME" ]; then
+            echo "::error::Tag $GITHUB_REF_NAME does not match package.json version $v (use npm version)"
+            exit 1
+          fi
+
+      - run: npm ci
+
+      - name: Unit tests
+        run: npm run test:unit
+
+      - name: Build the installer
+        run: npm run build && npx electron-builder --win --publish never
+
+      - name: Smoke-test the packaged app
+        run: npm run test:packaged
+
+      - name: Publish to GitHub Releases
+        run: npx electron-builder --win --prepackaged release/win-unpacked --publish always
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -3,6 +3,7 @@ import { useAppStore } from '../stores/app-store.js';
 import LibraryView from '../features/library/LibraryView.jsx';
 import RecorderHud from '../features/hud/RecorderHud.jsx';
 import EditorView from '../features/editor/EditorView.jsx';
+import UpdateNotice from '../features/update/UpdateNotice.jsx';
 
 export const isHud = window.location.hash === '#hud';
 
@@ -29,6 +30,7 @@ export default function App() {
     <div className="h-screen flex flex-col">
       {view === 'library' && <LibraryView />}
       {view === 'editor' && <EditorView />}
+      <UpdateNotice />
     </div>
   );
 }

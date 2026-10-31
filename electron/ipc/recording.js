@@ -430,4 +430,10 @@ function abortActiveCapture() {
   nativeCapture.abort();
 }
 
-module.exports = { registerRecordingIpc, buildProjectFromPending, abortActiveCapture };
+// True between recording:begin and finalize/discard (used to hold back an
+// app update so it never restarts the app mid-recording).
+function isRecording() {
+  return activePendingId !== null;
+}
+
+module.exports = { registerRecordingIpc, buildProjectFromPending, abortActiveCapture, isRecording };

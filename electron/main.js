@@ -1,7 +1,9 @@
 const path = require('path');
 const { app, BrowserWindow, Menu, protocol, screen, session, shell } = require('electron');
 
-const { registerRecordingIpc, abortActiveCapture } = require('./ipc/recording');
+const { registerRecordingIpc, abortActiveCapture, isRecording } = require('./ipc/recording');
+const { registerUpdateIpc } = require('./ipc/update');
+const { createUpdater } = require('./services/updater');
 const { registerProjectsIpc } = require('./ipc/projects');
 const { registerExportIpc } = require('./ipc/export');
 const { registerWindowsIpc } = require('./ipc/windows');
@@ -294,6 +296,20 @@ app.whenReady().then(() => {
     minimizeHud: (sender) => isHud(sender) && hudWindow.minimize(),
     closeHud: (sender) => isHud(sender) && hudWindow.close(),
   });
+
+  // Updates from GitHub Releases, installed builds only. Every window hears
+  // the state; the library/editor window shows the notice.
+  const updates = createUpdater({
+    updater: require('electron-updater').autoUpdater,
+    enabled: app.isPackaged,
+    isBusy: isRecording,
+    broadcast: (state) => {
+      for (const win of BrowserWindow.getAllWindows()) win.webContents.send('update:state', state);
+    },
+    log: (msg) => logError('updater', msg),
+  });
+  registerUpdateIpc(updates);
+  updates.start();
 
   createHudWindow();
   // Interrupted recordings are offered for recovery in the library.

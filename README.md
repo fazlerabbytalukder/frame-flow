@@ -198,16 +198,40 @@ Documents/Frame Studio/projects/<id>/
 
 ## Releasing
 
-1. `npm test`: all unit and Electron suites must pass.
-2. `npm run dist`: builds `dist/` and `release/Frame-Studio-Setup-<version>.exe`.
-   If electron-builder fails with EPERM renaming `win-unpacked.tmp` (Defender or
-   an editor holding the folder), build elsewhere with
-   `npx electron-builder --win --config.directories.output=<other folder>`.
-3. `npm run test:packaged [-- <win-unpacked folder>]`: loads FFmpeg, uiohook,
-   sharp, onnxruntime + Whisper and the renderer (CSP, sandboxed preload,
-   MediaPipe WASM) from inside `app.asar`, in hidden windows. Run it once from a
-   deeply nested copy as well, to catch paths over Windows' 260-character limit.
-4. Manual pass on a clean machine: install, record, edit, export, uninstall.
+Releases are built and published by GitHub Actions
+(`.github/workflows/release.yml`) when a version tag is pushed. Ordinary
+pushes release nothing.
+
+```powershell
+npm test                  # everything must pass first
+npm version patch         # 0.1.0 -> 0.1.1 (minor / major for bigger steps); commits + tags v0.1.1
+git push --follow-tags    # pushes the code and the tag: the release workflow starts
+```
+
+The workflow checks that the tag matches `package.json`, runs the unit tests,
+builds the installer, runs `npm run test:packaged` against it, and publishes
+`Frame-Studio-Setup-<version>.exe`, its `.blockmap` and `latest.yml` to
+https://github.com/fazlerabbytalukder/frame-flow/releases. Send people the
+**latest release** link:
+https://github.com/fazlerabbytalukder/frame-flow/releases/latest
+
+**Updates.** Installed copies (0.1.0 and later) check that release feed 15 s
+after launch and every 6 hours (`electron/services/updater.js`). When a newer
+version exists, the library/editor window shows a notice: Download → progress
+→ Restart to update. Restarting is refused while a recording runs, and a
+downloaded update also installs when the app quits. Only the changed blocks
+are downloaded (blockmap). The check is the app's one outgoing connection,
+and it sends no user data. The feed only works while the repository is
+**public**; a private repo would need a token inside the app.
+
+Local builds: `npm run dist` builds into `release/` without publishing. If
+electron-builder fails with EPERM renaming `win-unpacked.tmp` (Defender or an
+editor holding the folder), build elsewhere with
+`npx electron-builder --win --publish never --config.directories.output=<folder>`.
+`npm run test:packaged [-- <win-unpacked folder>]` smoke-tests a build from
+inside `app.asar`; also run it once from a deeply nested copy to catch paths
+over Windows' 260-character limit. Before a big release, do a manual pass on a
+clean machine: install, record, edit, export, update, uninstall.
 
 Production hardening in place: a single instance, the Chromium sandbox on for
 every window, no navigation or webviews, no menu or DevTools in installed
@@ -225,7 +249,7 @@ FFmpeg, the uninstaller and the installer.
 All §6 roadmap features that can be built without external infrastructure are done.
 What remains is release work and deliberately deferred scope:
 
-- Code signing certificate (see Releasing); auto-update would need a network feed, and the app is offline by design
+- Code signing certificate (see Releasing), so SmartScreen stops warning on install
 - Manual §10 passes the suite cannot automate: real capture hardware, multi-monitor/DPI, 10-minute soak, clean-machine install/uninstall
 - Licensing/payments and the optional cloud layer (§11/§13) — only after validating demand
 - Deferred by plan §6: AI narration, collaborative editing, keyframe animation, teams

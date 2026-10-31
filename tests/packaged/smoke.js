@@ -42,6 +42,17 @@ app.whenReady().then(async () => {
     }
   });
 
+  await check('update feed points at GitHub Releases', () => {
+    const yml = fs.readFileSync(path.join(unpacked, 'resources', 'app-update.yml'), 'utf8');
+    for (const line of ['provider: github', 'owner: fazlerabbytalukder', 'repo: frame-flow']) {
+      if (!yml.includes(line)) throw new Error(`app-update.yml lacks "${line}"`);
+    }
+  });
+  await check('electron-updater loads from asar', () => {
+    const { NsisUpdater } = req('node_modules/electron-updater');
+    if (typeof NsisUpdater !== 'function') throw new Error('no NsisUpdater');
+  });
+
   const media = req('electron/services/media-service.js');
   await check('ffmpeg runs from app.asar.unpacked', async () => {
     const p = media.ffmpegPath();

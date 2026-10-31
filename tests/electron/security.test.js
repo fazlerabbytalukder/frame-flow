@@ -65,12 +65,14 @@ module.exports = (ctx) => {
         assert.doesNotMatch(src, /require\((?!'electron')/);
         assert.doesNotMatch(src, /ipcRenderer\.(send|sendSync)\b/);
       }
-      // The only main->renderer events are the global record shortcut and
-      // main-window navigation; callbacks never receive the raw IPC event.
+      // The only main->renderer events are the global record shortcut,
+      // main-window navigation and the update state; callbacks never receive
+      // the raw IPC event.
       const listeners = [...preload.matchAll(/ipcRenderer\.on\('([^']+)'/g)].map((m) => m[1]);
-      assert.deepEqual(listeners, ['app:navigate', 'shortcut:record-toggle']);
+      assert.deepEqual(listeners, ['app:navigate', 'shortcut:record-toggle', 'update:state']);
       assert.match(preload, /const listener = \(\) => callback\(\);/);
       assert.match(preload, /const listener = \(_event, target\) => callback\(target\);/);
+      assert.match(preload, /const listener = \(_event, state\) => callback\(state\);/);
       assert.doesNotMatch(areaPreload, /ipcRenderer\.on\b/);
 
       const channels = [...(preload + areaPreload).matchAll(/invoke\('([^']+)'/g)].map((m) => m[1]);
@@ -161,6 +163,20 @@ module.exports = (ctx) => {
       for (const f of files) {
         assert.doesNotMatch(fs.readFileSync(f, 'utf8'), /createServer\(|\.listen\(/, `${path.relative(ROOT, f)} must not listen`);
       }
+    });
+
+    test('updates: the only outgoing connection, to the fixed GitHub release feed', () => {
+      // electron-updater is loaded in exactly one place, and the updater
+      // service itself has no network code of its own.
+      const users = [...walk(path.join(ROOT, 'src')), ...walk(path.join(ROOT, 'electron'))]
+        .filter((f) => /electron-updater/.test(fs.readFileSync(f, 'utf8')))
+        .map((f) => path.relative(ROOT, f).replace(/\\/g, '/'));
+      assert.deepEqual(users, ['electron/main.js', 'electron/services/updater.js']);
+      assert.match(read('electron/main.js'), /require\('electron-updater'\)\.autoUpdater/);
+      assert.doesNotMatch(read('electron/services/updater.js'), /require\(/, 'the service gets its updater injected');
+      assert.doesNotMatch(read('electron/main.js'), /setFeedURL|allowPrerelease|allowDowngrade/, 'the feed comes only from package.json');
+      const pkg = JSON.parse(read('package.json'));
+      assert.deepEqual(pkg.build.publish.map((p) => [p.provider, p.owner, p.repo]), [['github', 'fazlerabbytalukder', 'frame-flow']]);
     });
 
     test('share server: serves only, never calls out; its page talks only to its own link', () => {

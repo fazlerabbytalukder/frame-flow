@@ -63,10 +63,19 @@
       "uninstallDisplayName": "Frame Studio",
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true
-    }
+    },
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "fazlerabbytalukder",
+        "repo": "frame-flow",
+        "releaseType": "release"
+      }
+    ]
   },
   "dependencies": {
     "@huggingface/transformers": "3.8.1",
+    "electron-updater": "^6.8.11",
     "ffmpeg-static": "^5.2.0",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
@@ -84,5 +93,9 @@
     "tailwindcss": "^4.1.4",
     "vite": "^6.3.2",
     "wait-on": "^8.0.3"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/fazlerabbytalukder/frame-flow.git"
   }
 }
